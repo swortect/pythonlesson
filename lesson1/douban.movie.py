@@ -51,11 +51,9 @@ def maker(url):
                     comment_top5[4]])
         num+=1
     return sum
-
 urls=tuple([f'https://movie.douban.com/top250?start={str(x)}' for x in range(0,226,25)])
 
 if __name__ == '__main__':
-
     num = 1
     data=[]
     for page in urls:
