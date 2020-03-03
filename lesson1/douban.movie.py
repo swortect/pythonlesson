@@ -60,7 +60,6 @@ if __name__ == '__main__':
     data=[]
     for page in urls:
         data=data+maker(page)
-
     with open("douban_movie250" + ".csv", "w+", newline='', encoding='utf-8-sig') as f:
         writer = csv.writer(f)
         writer.writerow(['电影名', '评分', '短评数量','评论1','评论2','评论3','评论4','评论5'])
