@@ -110,9 +110,9 @@ if __name__ == '__main__':
                 print(enumerate())
                 print("----------")
 
-                if (pages.empty()):
-                    isEnd=True
-                    break
+                # if (pages.empty()):
+                #     isEnd=True
+                break
 
     class ConsumerTheard(Thread):
         def run(self):
@@ -132,15 +132,15 @@ if __name__ == '__main__':
                     print(active_count())
                     print(enumerate())
                     print("++++++++++")
-                    if ((isEnd == True) & (queue.empty() == True)):
-                        break
+                    # if ((isEnd == True) & (queue.empty() == True)):
+                    break
 
     p1 = ProducerThread(name='p1')
     p1.start()
-    # p2 = ProducerThread(name='p2')
-    # p2.start()
-    # p3 = ProducerThread(name='p3')
-    # p3.start()
+    p2 = ProducerThread(name='p2')
+    p2.start()
+    p3 = ProducerThread(name='p3')
+    p3.start()
 
     c1 = ConsumerTheard(name='c1')
     c1.start()
