@@ -85,7 +85,9 @@ if __name__ == '__main__':
     isEnd = False
     pages = Queue(11)
     urls = tuple(
-        [f'https://movie.douban.com/top250?start={str(x)}' for x in range(0, 226, 25)])
+        [f'http://192.168.17.23/labs/douban/douban_{str(x)}.html' for x in range(0, 226, 25)])
+    #https://movie.douban.com/top250?start=
+    #http://192.168.17.23/labs/douban/douban_
     for i in urls:
         pages.put(i)
     queue = Queue(100)
