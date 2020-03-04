@@ -25,7 +25,7 @@ def getHttp(url):
         return False
 def getComment(url):
     bs_info=getHttp(url+'comments?sort=new_score&status=P')
-    comment=[x.text for x in bs_info.find_all('span',{'class':'short'}, limit=5)]
+    comment=[re.sub(r'\s+', '', x.text) for x in bs_info.find_all('span',{'class':'short'}, limit=5)]
     return comment
 def maker(url):
     global num
