@@ -1,12 +1,14 @@
 import requests
 from bs4 import BeautifulSoup as bs
-from threading import Thread, current_thread,active_count,enumerate
+from threading import Thread, current_thread,active_count
 from queue import Queue
 import re
+import os
 import csv
 from time import sleep
 from fake_useragent import UserAgent
 import time
+import hashlib
 
 # 由于多并发读取，统一由写入队列消费，不能保证顺序，所以多读一个排名字段，供业务使用
 
@@ -15,7 +17,15 @@ class Douban():
     def __init__(self):
         pass
 
+    def md5_convert(self, string):
+        m = hashlib.md5()
+        m.update(string.encode())
+        return m.hexdigest()
     def getHttp(self, url):
+        url_md5=self.md5_convert(url)
+        key=dir+"/"+url_md5
+        if os.path.exists(dir+"/"+url_md5):
+            pass
         ua = UserAgent()
         headers = {
             'User-Agent': ua.random
@@ -23,6 +33,8 @@ class Douban():
         # print(ua.random)
         res = requests.get(url, headers=headers)
         res.encoding = 'utf-8'
+
+
         if (res.status_code == 200):
             return bs(res.text, 'lxml')
         else:
@@ -38,6 +50,7 @@ class Douban():
     def maker(self, url):
         # global num
         print(url)
+
         bs_info = self.getHttp(url)
 
         rank = [
@@ -64,19 +77,7 @@ class Douban():
         print('列表读取完毕')
         sum = []
         global queue
-        global pages
-        global isEnd
         for i in range(0, 25):
-            comment_top5 = self.getComment(href[i])
-            # sleep(1)
-            # print(comment_top5)
-            # queue.put([title[i], star[i], comment_num[i],
-            #            comment_top5[0],
-            #            comment_top5[1],
-            #            comment_top5[2],
-            #            comment_top5[3],
-            #            comment_top5[4],
-            #            rank[i]])
             queue.put([title[i], star[i], comment_num[i],
                        rank[i]])
             print(f'{title[i]}评论读取完毕')
@@ -84,7 +85,9 @@ class Douban():
 
 
 if __name__ == '__main__':
-    isEnd = False
+    dir = "cache"
+    if not os.path.exists(dir):
+        os.makedirs(dir)
     pages = Queue(11)
     urls = tuple(
         [f'http://192.168.3.23/lab/movie/douban_{str(x)}.html' for x in range(0, 226, 25)])
@@ -92,32 +95,23 @@ if __name__ == '__main__':
     #http://192.168.17.23/labs/douban/douban_
     for i in urls:
         pages.put(i)
-    queue = Queue(100)
+
+    queue = Queue(35)
 
     class ProducerThread(Thread):
         def run(self):
             global pages
-            global isEnd
             dob = Douban()
             while True:
                 url = pages.get()
                 dob.maker(url)
                 pages.task_done()
-                print("----------")
-                print(pages.qsize())
-                print(queue.qsize())
-                print(active_count())
-                print(enumerate())
-                print("----------")
-
-                # if (pages.empty()):
-                #     isEnd=True
-                break
+                if (pages.empty()):
+                    break
 
     class ConsumerTheard(Thread):
         def run(self):
             global queue
-            global isEnd
             with open("douban_movie250_t" + ".csv", "w+", newline='', encoding='utf-8-sig') as f:
                 writer = csv.writer(f)
                 writer.writerow(['电影名', '评分', '短评数量', '评论1',
@@ -126,14 +120,8 @@ if __name__ == '__main__':
                     item = queue.get()
                     writer.writerow(item)
                     queue.task_done()
-                    print("++++++++++")
-                    print(pages.qsize())
-                    print(queue.qsize())
-                    print(active_count())
-                    print(enumerate())
-                    print("++++++++++")
-                    # if ((isEnd == True) & (queue.empty() == True)):
-                    break
+                    if (active_count()==2 and queue.empty()):
+                        break
 
     p1 = ProducerThread(name='p1')
     p1.start()
@@ -141,6 +129,9 @@ if __name__ == '__main__':
     p2.start()
     p3 = ProducerThread(name='p3')
     p3.start()
-
+    p4 = ProducerThread(name='p3')
+    p4.start()
+    p5 = ProducerThread(name='p3')
+    p5.start()
     c1 = ConsumerTheard(name='c1')
     c1.start()
