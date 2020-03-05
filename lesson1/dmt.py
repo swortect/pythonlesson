@@ -1,6 +1,6 @@
 import requests
 from bs4 import BeautifulSoup as bs
-from threading import Thread, current_thread, active_count,enumerate
+from threading import Thread, current_thread, active_count, enumerate
 from queue import Queue
 import re
 import os
@@ -9,7 +9,6 @@ from time import sleep
 from fake_useragent import UserAgent
 import time
 import hashlib
-
 # 由于多并发读取，统一由写入队列消费，不能保证顺序，所以多读一个排名字段，供业务使用
 
 
@@ -23,7 +22,7 @@ class Douban():
         return m.hexdigest()
 
     def getHttp(self, url):
-        dir="cache"
+        dir = "cache"
         url_md5 = self.md5_convert(url)
         key = dir + "/" + url_md5
 
@@ -48,7 +47,6 @@ class Douban():
             with open(key, encoding='utf-8-sig') as html:
                 print(f"读取缓存{url}")
                 return bs(html.read(), 'lxml')
-
 
     def getComment(self, url):
         bs_info = self.getHttp(url + 'comments?sort=new_score&status=P')
@@ -86,12 +84,12 @@ class Douban():
         global queue
         for i in range(0, 25):
             comment_top5 = self.getComment(href[i])
-            queue.put([title[i],star[i],comment_num[i],
-                    comment_top5[0],
-                    comment_top5[1],
-                    comment_top5[2],
-                    comment_top5[3],
-                    comment_top5[4]])
+            queue.put([title[i], star[i], comment_num[i],
+                       comment_top5[0],
+                       comment_top5[1],
+                       comment_top5[2],
+                       comment_top5[3],
+                       comment_top5[4]])
             print(f'{title[i]}评论读取完毕')
         return True
 
@@ -130,15 +128,11 @@ if __name__ == '__main__':
                 writer.writerow(['电影名', '评分', '短评数量', '评论1',
                                  '评论2', '评论3', '评论4', '评论5', '排名'])
                 while True:
-                    print(enumerate())
-                    print(active_count())
-                    print(queue.empty())
-                    if (active_count() == 2 and queue.empty()):
+                    if (active_count() < 3 and queue.empty()):
                         break
                     item = queue.get()
                     writer.writerow(item)
                     queue.task_done()
-
 
     p1 = ProducerThread(name='p1')
     p1.start()
