@@ -1,6 +1,6 @@
 import requests
 from bs4 import BeautifulSoup as bs
-from threading import Thread, current_thread,active_count
+from threading import Thread, current_thread, active_count,enumerate
 from queue import Queue
 import re
 import os
@@ -21,25 +21,34 @@ class Douban():
         m = hashlib.md5()
         m.update(string.encode())
         return m.hexdigest()
+
     def getHttp(self, url):
-        url_md5=self.md5_convert(url)
-        key=dir+"/"+url_md5
-        if os.path.exists(dir+"/"+url_md5):
-            pass
-        ua = UserAgent()
-        headers = {
-            'User-Agent': ua.random
-        }
-        # print(ua.random)
-        res = requests.get(url, headers=headers)
-        res.encoding = 'utf-8'
+        dir="cache"
+        url_md5 = self.md5_convert(url)
+        key = dir + "/" + url_md5
 
-
-        if (res.status_code == 200):
-            return bs(res.text, 'lxml')
+        if not os.path.exists(key):
+            sleep(1)
+            ua = UserAgent()
+            headers = {
+                'User-Agent': ua.random
+            }
+            # print(ua.random)
+            res = requests.get(url, headers=headers)
+            res.encoding = 'utf-8'
+            if (res.status_code == 200):
+                with open(key, "w+", newline='', encoding='utf-8-sig') as f:
+                    f.write(res.text)
+                    print(f"写入缓存{url}")
+                    return bs(res.text, 'lxml')
+            else:
+                print("error")
+                return False
         else:
-            print("error")
-            return False
+            with open(key, encoding='utf-8-sig') as html:
+                print(f"读取缓存{url}")
+                return bs(html.read(), 'lxml')
+
 
     def getComment(self, url):
         bs_info = self.getHttp(url + 'comments?sort=new_score&status=P')
@@ -50,9 +59,7 @@ class Douban():
     def maker(self, url):
         # global num
         print(url)
-
         bs_info = self.getHttp(url)
-
         rank = [
             x.find("em").text for x in bs_info.find_all(
                 'div', {
@@ -78,8 +85,13 @@ class Douban():
         sum = []
         global queue
         for i in range(0, 25):
-            queue.put([title[i], star[i], comment_num[i],
-                       rank[i]])
+            comment_top5 = self.getComment(href[i])
+            queue.put([title[i],star[i],comment_num[i],
+                    comment_top5[0],
+                    comment_top5[1],
+                    comment_top5[2],
+                    comment_top5[3],
+                    comment_top5[4]])
             print(f'{title[i]}评论读取完毕')
         return True
 
@@ -90,9 +102,10 @@ if __name__ == '__main__':
         os.makedirs(dir)
     pages = Queue(11)
     urls = tuple(
-        [f'http://192.168.3.23/lab/movie/douban_{str(x)}.html' for x in range(0, 226, 25)])
-    #https://movie.douban.com/top250?start=
-    #http://192.168.17.23/labs/douban/douban_
+        [f'https://movie.douban.com/top250?start={str(x)}' for x in range(0, 226, 25)])
+    # https://movie.douban.com/top250?start=
+    # http://192.168.17.23/labs/douban/douban_
+    # http://192.168.3.23/lab/movie/douban_
     for i in urls:
         pages.put(i)
 
@@ -117,11 +130,15 @@ if __name__ == '__main__':
                 writer.writerow(['电影名', '评分', '短评数量', '评论1',
                                  '评论2', '评论3', '评论4', '评论5', '排名'])
                 while True:
+                    print(enumerate())
+                    print(active_count())
+                    print(queue.empty())
+                    if (active_count() == 2 and queue.empty()):
+                        break
                     item = queue.get()
                     writer.writerow(item)
                     queue.task_done()
-                    if (active_count()==2 and queue.empty()):
-                        break
+
 
     p1 = ProducerThread(name='p1')
     p1.start()
